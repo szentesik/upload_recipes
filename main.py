@@ -6,7 +6,6 @@
 ####################################################################################
 
 # Import libraries
-import json
 from unstructured.partition.md import partition_md
 from unstructured.chunking.title import chunk_by_title
 from unstructured.chunking.basic import chunk_elements
