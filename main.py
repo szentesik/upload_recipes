@@ -6,15 +6,18 @@
 ####################################################################################
 
 # Import libraries
+import json
 from unstructured.partition.md import partition_md
 from unstructured.chunking.title import chunk_by_title
 from unstructured.chunking.basic import chunk_elements
 from unstructured.documents.elements import (Element, Title, Text, ElementMetadata)
 from tqdm import tqdm
+from typing import List
 import os
 from glob import glob
 from dotenv import load_dotenv
 import re
+import requests
 
 print("✅ All libraries imported successfully!")
 
@@ -219,8 +222,7 @@ for i, chunk in enumerate(elements_text):
            }            
     doc = {
         "id": i + 1,        
-        "category": chunk.category if hasattr(chunk, 'category') else "Document",
-        "metadata": chunk.metadata if hasattr(chunk, 'metadata') else {},
+        "category": chunk.category if hasattr(chunk, 'category') else "Document",        
         "recipe_name": filedata["recipe_name"],
         "section_type": "full",
         "ingredients_count": filedata["ingredients_count"],
@@ -267,8 +269,7 @@ for i, chunk in enumerate(chunks_by_title):
            }            
     doc = {
         "id": i + 1,        
-        "category": chunk.category if hasattr(chunk, 'category') else "Document",
-        "metadata": chunk.metadata if hasattr(chunk, 'metadata') else {},
+        "category": chunk.category if hasattr(chunk, 'category') else "Document",        
         "recipe_name": filedata["recipe_name"],
         "section_type": section_type,  # "ingredients|steps|notes|full"
         "ingredients_count": filedata["ingredients_count"],
@@ -300,8 +301,7 @@ for i, chunk in enumerate(chunks_basic):
            }            
     doc = {
         "id": i + 1,        
-        "category": chunk.category if hasattr(chunk, 'category') else "Document",
-        "metadata": chunk.metadata if hasattr(chunk, 'metadata') else {},
+        "category": chunk.category if hasattr(chunk, 'category') else "Document",        
         "recipe_name": filedata["recipe_name"],
         "section_type": "full",        
         "ingredients_count": filedata["ingredients_count"],
@@ -319,4 +319,21 @@ print(f"✅ Prepared {len(documents_overlapped)} chunked documents (fixed size o
 
 ########################################### Upload ################################################
 
-# TODO: implement uploading
+api_endpoint=os.getenv("UPLOAD_API_ENDPOINT", "")
+if not api_endpoint:
+    print(f"❌ Environment variable UPLOAD_API_ENDPOINT is not defined")
+    quit()
+
+
+def upload_documents(documents: list, url: str):
+    uploaded = 0
+    for doc in tqdm(documents, desc="Uploading documents"):                        
+        res = requests.post(url, json = doc)
+        if(res.status_code == 201):
+            uploaded +=1
+        else:
+            print(f"⚠️ Resource not created: {res.status_code}, {res.text}")
+    return uploaded
+
+uploaded = upload_documents(documents_baseline, api_endpoint)
+print(f"✅ {uploaded} / {len(documents_baseline)} documents uploaded")
