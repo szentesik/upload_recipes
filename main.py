@@ -24,7 +24,14 @@ print("✅ All libraries imported successfully!")
 load_dotenv()
 print("✅ Test environment loaded!")
 
+
 data_folder = "./data"
+
+print(f"⚠️ This scripts uploads all recipes from {data_folder} to embedding database!")
+confirmation = input("❓ Do you want to continue? (y/N): ").strip().lower()
+if confirmation != 'y': quit()
+
+
 print(f"📂 Loading documents from: {data_folder}")
 
 
@@ -80,7 +87,7 @@ def gather_file_metadata(filename: str):
             else:
                 data["difficulty"] = "hard"
             data["prep_time"] = prep_time
-        print(f"➡️ {source_file} contains recipe of {recipe_name}, needs {ingredients_count} ingredients and it takes {steps_count} steps. It is {data["difficulty"]} to make. Preparation time: {prep_time}.")
+        print(f"➡️  {source_file} contains recipe of {recipe_name}, needs {ingredients_count} ingredients and it takes {steps_count} steps. It is {data["difficulty"]} to make. Preparation time: {prep_time}.")
         return data
     except Exception as e:
         print(f"❌ Unable to open file: {filename}: '{e}'")
@@ -132,19 +139,19 @@ else:
             elements_md.extend(partition_md(filename=file))
 
     # Display the extracted elements
-    print(f"✅ Total elements extracted in text: {len(elements_text)}")
-    print("\n📋 Element types and content:")
-    for i, element in enumerate(elements_text[:10]):  # Show first 10 elements
-        print(f"{i+1}. Type: {element.category},\nContent:\n{str(element)}")
-        print("-"*40)
-
-    print("="*120)
+    print(f"✅ Total elements extracted in raw text: {len(elements_text)}")
+    # print("\n📋 Element types and content:")
+    # for i, element in enumerate(elements_text[:10]):  # Show first 10 elements
+    #     print(f"{i+1}. Type: {element.category},\nContent:\n{str(element)}")
+    #     print("-"*40)
+    #
+    #print("="*120)
 
     print(f"✅ Total elements extracted in md: {len(elements_md)}")
-    print("\n📋 Element types and content:")
-    for i, element in enumerate(elements_md[:10]):  # Show first 10 elements
-        print(f"{i+1}. Type: {element.category},\nContent:\n{str(element)}")
-        print("-"*40)
+    # print("\n📋 Element types and content:")
+    # for i, element in enumerate(elements_md[:10]):  # Show first 10 elements
+    #     print(f"{i+1}. Type: {element.category},\nContent:\n{str(element)}")
+    #     print("-"*40)
 
 ####################################### Chunking ##############################################
 
@@ -160,23 +167,23 @@ chunks_by_title = chunk_by_title(
     include_orig_elements=True
 )
 
-print(f"By Title Strategy - Total chunks created: {len(chunks_by_title)}")
-print("\n" + "="*60)
-
-# Display the chunks with their titles
-for i, chunk in enumerate(chunks_by_title[:25]): 
-    print(f"\nChunk {i+1}:")
-    print(f"Length: {len(str(chunk))} characters")
+print(f"✅ By Title Strategy - Total chunks created: {len(chunks_by_title)}")
+#print("\n" + "="*60)
+#
+## Display the chunks with their titles
+# for i, chunk in enumerate(chunks_by_title[:25]): 
+#     print(f"\nChunk {i+1}:")
+#     print(f"Length: {len(str(chunk))} characters")
     
-    # Check if chunk has metadata with title information
-    if hasattr(chunk, 'metadata'):
-        print(f"Metadata: {chunk.metadata.to_dict()}")
-        if hasattr(chunk.metadata, 'orig_elements'):            
-            print(f"Kind: {chunk.metadata.orig_elements[0]} ({str(type(chunk.metadata.orig_elements[0]))})")
-            print(*chunk.metadata.orig_elements, sep='\n')
+#     # Check if chunk has metadata with title information
+#     if hasattr(chunk, 'metadata'):
+#         print(f"Metadata: {chunk.metadata.to_dict()}")
+#         if hasattr(chunk.metadata, 'orig_elements'):            
+#             print(f"Kind: {chunk.metadata.orig_elements[0]} ({str(type(chunk.metadata.orig_elements[0]))})")
+#             print(*chunk.metadata.orig_elements, sep='\n')
     
-    print(f"Content: {str(chunk)}")
-    print("-" * 80)
+#     print(f"Content: {str(chunk)}")
+#     print("-" * 80)
 
 # Chunking elements
 ## Method 3: Basic chunking (fix size with overlap)
@@ -189,18 +196,18 @@ chunks_basic = chunk_elements(
     include_orig_elements=True,  # Hard maximum for chunk size
 )
 
-print(f"Basic Strategy - Total chunks created: {len(chunks_basic)}")
-print("\n" + "="*60)
+print(f"✅ Basic Strategy - Total chunks created: {len(chunks_basic)}")
+#print("\n" + "="*120)
 
-# Display the chunks
-for i, chunk in enumerate(chunks_basic[:5]):  # Show first 5 chunks
-    print(f"\nChunk {i+1}:")
-    print(f"Length: {len(str(chunk))} characters")
-    # Check if chunk has metadata with title information
-    if hasattr(chunk, 'metadata'):
-        print(f"Metadata: {chunk.metadata.to_dict()}")
-    print(f"Content: {str(chunk)}")
-    print("-" * 80)
+# # Display the chunks
+# for i, chunk in enumerate(chunks_basic[:5]):  # Show first 5 chunks
+#     print(f"\nChunk {i+1}:")
+#     print(f"Length: {len(str(chunk))} characters")
+#     # Check if chunk has metadata with title information
+#     if hasattr(chunk, 'metadata'):
+#         print(f"Metadata: {chunk.metadata.to_dict()}")
+#     print(f"Content: {str(chunk)}")
+#     print("-" * 80)
 
 ##################################### Create documents ############################################
 
@@ -326,13 +333,22 @@ if not api_endpoint:
 
 def upload_documents(documents: list, url: str):
     uploaded = 0
-    for doc in tqdm(documents, desc="Uploading documents"):                        
-        res = requests.post(url, json = doc)
-        if(res.status_code == 201):
-            uploaded +=1
-        else:
-            print(f"⚠️ Resource not created: {res.status_code}, {res.text}")
-    return uploaded
+    try:
+        for doc in tqdm(documents, desc="Uploading documents"):                        
+            res = requests.post(url, json = doc)
+            if(res.status_code == 201):
+                uploaded +=1
+            else:
+                print(f"⚠️ Resource not created: {res.status_code}, {res.text}")        
+    except Exception as e:
+        print(f"❌ Upload failed: '{e}'")
+    finally:
+        return uploaded
 
 uploaded = upload_documents(documents_baseline, api_endpoint)
-print(f"✅ {uploaded} / {len(documents_baseline)} documents uploaded")
+if uploaded == len(documents_baseline):
+    print(f"✅ {uploaded} / {len(documents_baseline)} documents uploaded")
+elif uploaded > 0:
+    print(f"⚠️ {uploaded} / {len(documents_baseline)} documents uploaded")
+else:
+    print(f"❌ Error occurred while connecting to {api_endpoint}, no document uploaded!")
